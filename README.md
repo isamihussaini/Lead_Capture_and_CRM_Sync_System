@@ -45,4 +45,4 @@ Most automations stop at "the node ran without an error." This one treats a comp
 
 ## About
 
-Built by **[Muhammad Sami Ullah](https://www.linkedin.com/in/muhammad-sami-ullah-445a20418)**, an AI workflow automation specialist focused on n8n based automation for small businesses and startups.
+Built by [Muhammad Sami Ullah](https://www.linkedin.com/in/muhammad-sami-ullah-445a20418), an AI workflow automation specialist focused on n8n based automation for small businesses and startups.
