@@ -1,0 +1,1171 @@
+{
+  "name": "Lead Capture and CRM Sync System",
+  "nodes": [
+    {
+      "parameters": {
+        "formId": ""
+      },
+      "type": "n8n-nodes-base.typeformTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -400,
+        -32
+      ],
+      "id": "",
+      "name": "Typeform Trigger",
+      "webhookId": "",
+      "credentials": {
+        "typeformApi": {
+          "id": "",
+          "name": "Typeform account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "",
+              "leftValue": "={{ $json['What is your email address?'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "",
+              "leftValue": "={{ $json['What is your full name?'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "",
+      "name": "Validate Email Present"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Incomplete Lead",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Incomplete Lead",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Typeform Trigger').item.json['What is your full name?'] }}",
+            "Email": "={{ $('Typeform Trigger').item.json['What is your email address?'] }}",
+            "Company": "={{ $('Typeform Trigger').item.json['What company do you represent?'] }}",
+            "Message": "={{ $('Typeform Trigger').item.json['How can we help you?'] }}",
+            "Timestamp": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -368,
+        208
+      ],
+      "id": "",
+      "name": "Log Incomplete Lead to Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a professional sales assistant. Write a short, warm reply email to a lead who submitted a contact form.\\n\\nRules:\\n- Maximum 4 sentences total\\n- Sentence 1: Acknowledge their specific message in one line\\n- Sentence 2: One line on how we can help\\n- Sentence 3: Suggest a 15-minute call this week\\n- Sentence 4: Professional sign-off with name \\\"Sami\\\"\\n\\nNo subject line. No headers. No placeholders like [Your Name]. Plain text only.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Lead details:\\nName: {{ $json['What is your full name?'] }}\\nCompany: {{ $json['What company do you represent?'] }}\\nMessage: {{ $json.sanitized_lead_message }}\"\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        256,
+        -48
+      ],
+      "id": "",
+      "name": "Generate Personalized Reply via Groq",
+      "credentials": {
+        "groqApi": {
+          "id": "",
+          "name": "Groq account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Lead Management",
+          "cachedResultUrl": ""
+        },
+        "table": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('Validate Email Present').item.json['What is your email address?'] }}",
+            "Company": "={{ $('Validate Email Present').item.json['What company do you represent?'] }}",
+            "Message": "={{ $('Sanitize Lead Message').item.json.sanitized_lead_message }}",
+            "Name": "={{ $('Validate Email Present').item.json['What is your full name?'] }}",
+            "Draft": "={{ $('Validate AI Draft').item.json.validated_draft }}",
+            "Timestamp": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Draft",
+              "displayName": "Draft",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        -64
+      ],
+      "id": "",
+      "name": "Upsert Lead in CRM",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Regarding your inquiry about {{ $json.fields.Company }}",
+        "emailType": "html",
+        "message": "=<p style=\"font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6; white-space: pre-line;\">\n{{ $('Validate AI Draft').item.json.validated_draft }}\n</p>",
+        "options": {
+          "sendTo": "={{ $('Typeform Trigger').item.json['What is your email address?'] }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        -96
+      ],
+      "id": "",
+      "name": "Save Draft to Gmail",
+      "webhookId": "",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "new-channel"
+        },
+        "text": "=🔔 New Lead — Action Required\n\n👤 Name: {{ $('Typeform Trigger').item.json['What is your full name?'] }}\n🏢 Company: {{ $('Typeform Trigger').item.json['What company do you represent?'] }}\n📧 Email: {{ $('Typeform Trigger').item.json['What is your email address?'] }}\n💬 They said: \"{{ $('Sanitize Lead Message').item.json.sanitized_lead_message }}\"\n\n✅ AI reply drafted and saved to Gmail Drafts\n📊 Lead saved to CRM\n⏱️ Received: {{ new Date().toLocaleString() }}\n\nOpen Gmail Drafts → review → send in 2 minutes.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1296,
+        -96
+      ],
+      "id": "",
+      "name": "Notify Team via Slack",
+      "webhookId": "",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Backup",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Backup",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('Typeform Trigger').item.json['What is your email address?'] }}",
+            "Name ": "={{ $('Typeform Trigger').item.json['What is your full name?'] }}",
+            "Company": "={{ $('Typeform Trigger').item.json['What company do you represent?'] }}",
+            "Message": "={{ $('Sanitize Lead Message').item.json.sanitized_lead_message }}",
+            "Draft": "={{ $('Validate AI Draft').item.json.validated_draft }}",
+            "Timestamp": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Name ",
+              "displayName": "Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Draft",
+              "displayName": "Draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1488,
+        -96
+      ],
+      "id": "",
+      "name": "Save Lead + Draft to Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "new-channel"
+        },
+        "text": "=⚠️ Incomplete Lead Alert — Validation Failed\n\n👤 Name: {{ $('Typeform Trigger').item.json['What is your full name?'] }}\n🏢 Company: {{ $('Typeform Trigger').item.json['What company do you represent?'] }}\n📧 Email: ❌ MISSING / NOT PROVIDED\n💬 They said: \"{{ $('Typeform Trigger').item.json['How can we help you?'] }}\"\n\n🛑 Status: Execution Stopped. AI Draft and CRM Sync bypassed.\n📊 Action: Logged to 'Incomplete_Leads' Sheet for manual review.\n⏱️ Received: {{ new Date().toLocaleString() }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -160,
+        208
+      ],
+      "id": "",
+      "name": "Notify Team Incomplete Submission",
+      "webhookId": "",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Lead Management",
+          "cachedResultUrl": ""
+        },
+        "table": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('Typeform Trigger').item.json['What is your email address?'] }}",
+            "Company": "={{ $('Typeform Trigger').item.json['What company do you represent?'] }}",
+            "Message": "={{ $('Sanitize Lead Message').item.json.sanitized_lead_message }}",
+            "Name": "={{ $('Typeform Trigger').item.json['What is your full name?'] }}",
+            "Draft": "={{ \"AI draft unavailable — reply manually\" }}",
+            "Timestamp": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Draft",
+              "displayName": "Draft",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        208
+      ],
+      "id": "",
+      "name": "Upsert Lead in CRM Without AI Draft",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "new-channel"
+        },
+        "text": "=⚠️ AI Draft Generation Failed\n\n👤 Name: {{ $('Validate Email Present').item.json['What is your full name?'] }}\n🏢 Company: {{ $('Validate Email Present').item.json['What company do you represent?'] }}\n📧 Email: {{ $('Validate Email Present').item.json['What is your email address?'] }}\n💬 They said: \"{{ $('Sanitize Lead Message').item.json.sanitized_lead_message }}\"\n\n🛑 Status: Groq API Error. Gmail Draft bypassed.\n📊 Action: Lead has been safely saved to CRM. Manual follow-up required immediately!",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        400,
+        208
+      ],
+      "id": "",
+      "name": "Notify Team Groq Failure",
+      "webhookId": "",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Backup",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Backup",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('Typeform Trigger').item.json['What is your email address?'] }}",
+            "Name ": "={{ $('Typeform Trigger').item.json['What is your full name?'] }}",
+            "Company": "={{ $('Typeform Trigger').item.json['What company do you represent?'] }}",
+            "Message": "={{ $('Sanitize Lead Message').item.json.sanitized_lead_message }}",
+            "Draft": "={{ $('Validate AI Draft').item.json.validated_draft }}",
+            "Timestamp": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Name ",
+              "displayName": "Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Draft",
+              "displayName": "Draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1008,
+        208
+      ],
+      "id": "",
+      "name": "Save Lead to Sheet — CRM Failed",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "new-channel"
+        },
+        "text": "=🔔 New Lead — Action Required\n\n👤 Name: {{ $('Typeform Trigger').item.json['What is your full name?'] }}\n🏢 Company: {{ $('Typeform Trigger').item.json['What company do you represent?'] }}\n📧 Email: {{ $('Typeform Trigger').item.json['What is your email address?'] }}\n💬 They said: \"{{ $('Sanitize Lead Message').item.json.sanitized_lead_message }}\"\n\n🛑 Airtable upsert failed. Lead NOT saved to CRM.\n✅ Data saved to backup Google Sheet.\n⚠️ Manually add to CRM: \n⏱️ Received: {{ new Date().toLocaleString() }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1504,
+        208
+      ],
+      "id": "",
+      "name": "Slack Alert",
+      "webhookId": "",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Backup",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Backup",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('Typeform Trigger').item.json['What is your email address?'] }}",
+            "Name ": "={{ $('Typeform Trigger').item.json['What is your full name?'] }}",
+            "Company": "={{ $('Typeform Trigger').item.json['What company do you represent?'] }}",
+            "Message": "={{ $('Typeform Trigger').item.json['How can we help you?'] }}",
+            "Draft": "={{ \"AI draft unavailable — reply manually\" }}",
+            "Timestamp": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Name ",
+              "displayName": "Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Draft",
+              "displayName": "Draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        208
+      ],
+      "id": "",
+      "name": "Save Lead Without AI Draft",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Fetch the raw input message from the Typeform submission payload\nconst rawMessage = $('Typeform Trigger').first()?.json['How can we help you?'] || \"\";\n\n// 2. Set the strict technical character threshold (Consulting standard: 500 characters)\nconst CHAR_LIMIT = 500;\n\n// 3. Truncate the text safely if it exceeds the limit and append ellipsis\nlet cleanMessage = rawMessage;\nif (rawMessage.length > CHAR_LIMIT) {\n  cleanMessage = rawMessage.substring(0, CHAR_LIMIT) + \"... [Truncated for Token Optimization]\";\n}\n\n// 4. Pass the sanitized payload forward to the Groq node execution pipeline\nreturn [{\n  json: {\n    ...$json,\n    sanitized_lead_message: cleanMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        -48
+      ],
+      "id": "",
+      "name": "Sanitize Lead Message",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Safely extract the message content from the Groq node response\nconst groqResponse = $('Generate Personalized Reply via Groq').first()?.json;\nconst draftText = groqResponse?.choices?.[0]?.message?.content;\n\n// 2. Validate if the generated draft is empty, null, or contains fallback placeholders\nif (!draftText || draftText.trim() === \"\" || draftText.includes(\"[Your Name]\")) {\n  // Intentionally throw an error to route the execution to the fallback backup branch\n  throw new Error(\"Groq validation failed: AI response is empty, invalid, or missing content.\");\n}\n\n// 3. Pass the clean, validated draft data forward to the main sequence\nreturn [{\n  json: {\n    ...$json,\n    validated_draft: draftText.trim()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -48
+      ],
+      "id": "",
+      "name": "Validate AI Draft",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Fetch the data returned by the CRM/Airtable node API response\nconst crmResponse = $('Upsert Lead in CRM').first()?.json;\n\n// 2. Safely access the saved fields returned by the CRM using exact Airtable Column Names\nconst savedEmail = crmResponse?.fields?.Email || crmResponse?.Email;\nconst savedDraft = crmResponse?.fields?.Draft || crmResponse?.Draft;\n\n// 3. Strict structural checks: Ensure the CRM actually saved critical data fields without dropping them\nif (!savedEmail || !savedDraft || savedDraft.trim() === \"\") {\n  throw new Error(\"CRM Write Mismatch: CRM accepted the payload but returned an empty or truncated data structure.\");\n}\n\n// 4. Forward clean payload if verification checks pass\nreturn [{\n  json: {\n    ...$json,\n    crm_verification: \"verified_stable\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -80
+      ],
+      "id": "",
+      "name": "Verify CRM Write",
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Typeform Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Email Present",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Email Present": {
+      "main": [
+        [
+          {
+            "node": "Sanitize Lead Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Incomplete Lead to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Incomplete Lead to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Notify Team Incomplete Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Personalized Reply via Groq": {
+      "main": [
+        [
+          {
+            "node": "Validate AI Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Upsert Lead in CRM": {
+      "main": [
+        [
+          {
+            "node": "Verify CRM Write",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Lead to Sheet — CRM Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Draft to Gmail": {
+      "main": [
+        [
+          {
+            "node": "Notify Team via Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Team via Slack": {
+      "main": [
+        [
+          {
+            "node": "Save Lead + Draft to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead + Draft to Sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Notify Team Incomplete Submission": {
+      "main": [
+        []
+      ]
+    },
+    "Upsert Lead in CRM Without AI Draft": {
+      "main": [
+        [
+          {
+            "node": "Notify Team Groq Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Team Groq Failure": {
+      "main": [
+        [
+          {
+            "node": "Save Lead Without AI Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead to Sheet — CRM Failed": {
+      "main": [
+        [
+          {
+            "node": "Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead Without AI Draft": {
+      "main": [
+        []
+      ]
+    },
+    "Sanitize Lead Message": {
+      "main": [
+        [
+          {
+            "node": "Generate Personalized Reply via Groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate AI Draft": {
+      "main": [
+        [
+          {
+            "node": "Upsert Lead in CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Lead in CRM Without AI Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify CRM Write": {
+      "main": [
+        [
+          {
+            "node": "Save Draft to Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Lead to Sheet — CRM Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": ""
+  },
+  "id": "",
+  "tags": []
+}
