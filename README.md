@@ -2,7 +2,7 @@
 
 An end-to-end AI-powered lead automation workflow built in **n8n**. It captures leads from a Typeform submission, validates and sanitizes the data, generates a personalized AI reply, syncs everything to a CRM, and notifies the team — with verification and fallback handling at every failure-prone step.
 
-![Workflow Diagram](./Lead Capture and CRM Sync System.png)
+![Workflow Diagram](./Lead%20Capture%20and%20CRM%20Sync%20System.png)
 
 ## The Problem
 
