@@ -33,7 +33,7 @@ Most automations stop at "the node ran without an error." This one treats a comp
 ## Files in This Repo
 
 - `Lead_Capture_and_CRM_Sync_System.json`, the full exportable n8n workflow. Import it directly into your own n8n instance.
-- `Lead_Capture_and_CRM_Sync_System_Workflow.png`, a visual diagram of the workflow.
+- `Lead_Capture_and_CRM_Sync_System.png`, a visual diagram of the workflow.
 - `README.md`, this file.
 
 ## Setup
